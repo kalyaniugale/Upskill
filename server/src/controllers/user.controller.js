@@ -231,3 +231,104 @@ export const getUserEnrollments = async (req, res) => {
     return fail(res, error.message, 500);
   }
 };
+
+
+export const getUserAnalytics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findOne({ userId }).select("userId name role");
+    if (!user) return fail(res, `User not found: ${userId}`, 404);
+
+    const enrollment = await Enrollment.findOne({ userId, status: "active" }).sort({ updatedAt: -1 });
+    if (!enrollment) return fail(res, `No active enrollment for user: ${userId}`, 404);
+
+    const courseId = enrollment.courseId;
+
+    // get last 40 attempts (enough for graphs)
+    const attempts = await Attempt.find({ userId, courseId })
+      .sort({ createdAt: -1 })
+      .limit(40)
+      .select("attemptId topic score timeSpentMin timeRatio attemptNo format assetDifficulty createdAt assetId");
+
+    // totals
+    const totalAttempts = attempts.length;
+    const totalTimeMin = attempts.reduce((s, a) => s + (Number(a.timeSpentMin) || 0), 0);
+    const avgScore =
+      totalAttempts > 0
+        ? Math.round(attempts.reduce((s, a) => s + (Number(a.score) || 0), 0) / totalAttempts)
+        : 0;
+
+    const avgTimeRatio =
+      totalAttempts > 0
+        ? Number(
+            (attempts.reduce((s, a) => s + (Number(a.timeRatio) || 0), 0) / totalAttempts).toFixed(2)
+          )
+        : 0;
+
+    // retries: count attempts where attemptNo>1 OR same topic repeated
+    const retriesCount = attempts.filter((a) => Number(a.attemptNo || 1) > 1).length;
+
+    // topic retry leaderboard
+    const topicStats = {};
+    for (const a of attempts) {
+      const topic = a.topic || "unknown";
+      if (!topicStats[topic]) topicStats[topic] = { topic, attempts: 0, retries: 0, avgScore: 0, _sum: 0 };
+      topicStats[topic].attempts += 1;
+      if (Number(a.attemptNo || 1) > 1) topicStats[topic].retries += 1;
+      topicStats[topic]._sum += Number(a.score) || 0;
+    }
+    Object.values(topicStats).forEach((t) => {
+      t.avgScore = t.attempts ? Math.round(t._sum / t.attempts) : 0;
+      delete t._sum;
+    });
+
+    const topRetriedTopics = Object.values(topicStats)
+      .sort((a, b) => b.retries - a.retries)
+      .slice(0, 6);
+
+    // format performance
+    const formatStats = {};
+    for (const a of attempts) {
+      const f = a.format || "unknown";
+      if (!formatStats[f]) formatStats[f] = { format: f, attempts: 0, avgScore: 0, _sum: 0 };
+      formatStats[f].attempts += 1;
+      formatStats[f]._sum += Number(a.score) || 0;
+    }
+    Object.values(formatStats).forEach((f) => {
+      f.avgScore = f.attempts ? Math.round(f._sum / f.attempts) : 0;
+      delete f._sum;
+    });
+
+    const formatPerformance = Object.values(formatStats).sort((a, b) => b.attempts - a.attempts);
+
+    // score trend graph data (reverse chronological -> chronological)
+    const trend = attempts
+      .slice()
+      .reverse()
+      .map((a) => ({
+        at: a.createdAt,
+        topic: a.topic,
+        score: Number(a.score) || 0,
+        timeSpentMin: Number(a.timeSpentMin) || 0,
+        timeRatio: Number(a.timeRatio) || 0,
+      }));
+
+    return ok(res, {
+      user: { userId: user.userId, name: user.name, role: user.role },
+      courseId,
+      totalAttempts,
+      retriesCount,
+      totalTimeMin,
+      avgScore,
+      avgTimeRatio,
+      topRetriedTopics,
+      formatPerformance,
+      trend,
+      attempts: attempts.slice(0, 10), // quick list if needed
+    });
+  } catch (e) {
+    return fail(res, e.message, 500);
+  }
+};
+
