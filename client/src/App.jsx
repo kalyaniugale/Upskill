@@ -7,6 +7,7 @@ import Quiz from "./pages/Quiz";
 import Path from "./pages/Path";
 import Asset from "./pages/Asset";
 import Profile from "./pages/Profile";
+import AdminCatalog from "./pages/AdminCatalog"; // ✅ add
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
 
           {/* ✅ IMPORTANT: put profile BEFORE * */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminCatalog />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

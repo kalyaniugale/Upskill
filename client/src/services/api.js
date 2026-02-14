@@ -27,54 +27,43 @@ async function request(path, options = {}) {
   return json.data;
 }
 
-/**
- * API CLIENT
- */
 export const api = {
 
-  /* =========================
-     USER DASHBOARD + PROFILE
-     ========================= */
+  /* =========================================
+     USER / EMPLOYEE
+     ========================================= */
 
-  // main dashboard data
   getDashboard: (userId) =>
     request(`/api/user/${userId}/dashboard`),
 
-  // list all enrollments for dropdown
   getEnrollments: (userId) =>
     request(`/api/user/${userId}/enrollments`),
 
-  // ⭐ NEW — analytics for profile graphs
   getAnalytics: (userId) =>
     request(`/api/user/${userId}/analytics`),
 
+  /* =========================================
+     COURSE CATALOG (EMPLOYEE VIEW)
+     ========================================= */
 
-  /* =========================
-     COURSES
-     ========================= */
-
-  // list all available courses
   getCourses: () =>
     request(`/api/catalog/courses`),
 
-  // enroll into course (creates enrollment + path)
   enroll: (userId, courseId) =>
     request(`/api/user/${userId}/enroll/${encodeURIComponent(courseId)}`, {
       method: "POST",
     }),
 
-
-  /* =========================
-     ASSETS
-     ========================= */
+  /* =========================================
+     ASSETS (EMPLOYEE VIEW)
+     ========================================= */
 
   getAssetById: (assetId) =>
     request(`/api/catalog/assets/${encodeURIComponent(assetId)}`),
 
-
-  /* =========================
+  /* =========================================
      QUIZ ENGINE
-     ========================= */
+     ========================================= */
 
   getQuiz: (userId, topic) =>
     request(`/api/engine/${userId}/quiz?topic=${encodeURIComponent(topic)}`),
@@ -83,5 +72,53 @@ export const api = {
     request(`/api/engine/${userId}/quiz/submit`, {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+
+  /* =========================================
+     ADMIN — ASSET CATALOG MANAGEMENT
+     ========================================= */
+
+  adminListAssets: () =>
+    request(`/api/admin/assets`),
+
+  adminCreateAsset: (payload) =>
+    request(`/api/admin/assets`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  adminUpdateAsset: (assetId, payload) =>
+    request(`/api/admin/assets/${encodeURIComponent(assetId)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  adminDeleteAsset: (assetId) =>
+    request(`/api/admin/assets/${encodeURIComponent(assetId)}`, {
+      method: "DELETE",
+    }),
+
+  /* =========================================
+     ADMIN — COURSE MANAGEMENT
+     ========================================= */
+
+  adminListCourses: () =>
+    request(`/api/admin/courses`),
+
+  adminCreateCourse: (payload) =>
+    request(`/api/admin/courses`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  adminUpdateCourse: (courseId, payload) =>
+    request(`/api/admin/courses/${encodeURIComponent(courseId)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  adminDeleteCourse: (courseId) =>
+    request(`/api/admin/courses/${encodeURIComponent(courseId)}`, {
+      method: "DELETE",
     }),
 };
