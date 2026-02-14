@@ -24,6 +24,7 @@ function pick(arr, i) {
 
 // -------------------- dataset blueprint --------------------
 const USERS = [
+  { userId: "u-admin-01", name: "Admin", role: "admin", learning_style_preference: "mixed" },
   { userId: "u-emp-01", name: "Aarav Sharma", role: "employee", learning_style_preference: "video_first" },
   { userId: "u-emp-02", name: "Neha Patil", role: "employee", learning_style_preference: "doc_first" },
   { userId: "u-emp-03", name: "Rohan Verma", role: "employee", learning_style_preference: "mixed" },
